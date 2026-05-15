@@ -1,0 +1,100 @@
+CREATE DATABASE securevault;
+USE securevault;
+
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    master_password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE credential_types (
+    type_id INT AUTO_INCREMENT PRIMARY KEY,
+    type_name VARCHAR(50) NOT NULL,
+    security_level ENUM('critical', 'high', 'medium', 'low') NOT NULL,
+    requires_reauth BOOLEAN DEFAULT FALSE,
+    clipboard_timeout INT DEFAULT 30,
+    description VARCHAR(255)
+);
+
+CREATE TABLE vault (
+    vault_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    type_id INT,
+    site_name VARCHAR(100) NOT NULL,
+    username VARCHAR(100) NOT NULL,
+    encrypted_password TEXT NOT NULL,
+    notes TEXT,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (type_id) REFERENCES credential_types(type_id)
+);
+
+CREATE TABLE bank_credentials (
+    bank_id INT AUTO_INCREMENT PRIMARY KEY,
+    vault_id INT NOT NULL UNIQUE,
+    bank_name VARCHAR(100) NOT NULL,
+    account_number_encrypted TEXT,
+    card_last_four CHAR(4),
+    account_type ENUM('savings', 'current', 'credit', 'wallet') NOT NULL,
+    pin_encrypted TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (vault_id) REFERENCES vault(vault_id)
+);
+
+CREATE TABLE failed_login_attempts (
+    attempt_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(45),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE password_history (
+    history_id INT AUTO_INCREMENT PRIMARY KEY,
+    vault_id INT NOT NULL,
+    encrypted_password TEXT NOT NULL,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (vault_id) REFERENCES vault(vault_id)
+);
+
+CREATE TABLE user_preferences (
+    pref_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL UNIQUE,
+    auto_logout_minutes INT DEFAULT 10,
+    clipboard_clear_seconds INT DEFAULT 30,
+    theme ENUM('light', 'dark') DEFAULT 'dark',
+    default_security_level ENUM('critical', 'high', 'medium', 'low') DEFAULT 'medium',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE sessions (
+    session_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    session_token VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE audit_log (
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    vault_id INT,
+    action VARCHAR(20) NOT NULL,
+    action_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (vault_id) REFERENCES vault(vault_id)
+);
+
+-- Default credential types
+INSERT INTO credential_types (type_name, security_level, requires_reauth, clipboard_timeout, description) VALUES
+('Bank Account',  'critical', TRUE,  10, 'Online banking credentials'),
+('Email Account', 'high',     TRUE,  20, 'Primary or work email'),
+('Work Account',  'high',     FALSE, 20, 'Office tools, VPN, HR portals'),
+('Social Media',  'medium',   FALSE, 30, 'Instagram, Twitter, etc.'),
+('Shopping',      'medium',   FALSE, 30, 'E-commerce accounts'),
+('Entertainment', 'low',      FALSE, 60, 'Netflix, Spotify, gaming'),
+('Other',         'low',      FALSE, 60, 'Miscellaneous passwords');
