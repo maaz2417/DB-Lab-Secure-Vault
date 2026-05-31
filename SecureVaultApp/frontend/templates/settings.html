@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Preferences & Settings - SecureVault{% endblock %}
+
+{% block content %}
+<div style="max-width: 750px; margin: 0 auto;">
+    <div class="vault-header" style="margin-bottom: 2rem;">
+        <div>
+            <h1 style="font-size: 2rem;">⚙️ Preferences & Settings</h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">Adjust safety thresholds and customize theme styling</p>
+        </div>
+    </div>
+
+    <form action="{{ url_for('settings') }}" method="POST">
+        <div class="glass-card">
+            <h3 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem;">Security Configuration</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; flex-wrap: wrap;">
+                <div class="form-group">
+                    <label for="auto_logout_minutes">Auto Logout Timeout</label>
+                    <select id="auto_logout_minutes" name="auto_logout_minutes" class="input-control" required>
+                        <option value="1" {% if prefs.auto_logout_minutes == 1 %}selected{% endif %}>1 Minute</option>
+                        <option value="5" {% if prefs.auto_logout_minutes == 5 %}selected{% endif %}>5 Minutes</option>
+                        <option value="10" {% if prefs.auto_logout_minutes == 10 %}selected{% endif %}>10 Minutes (Default)</option>
+                        <option value="15" {% if prefs.auto_logout_minutes == 15 %}selected{% endif %}>15 Minutes</option>
+                        <option value="30" {% if prefs.auto_logout_minutes == 30 %}selected{% endif %}>30 Minutes</option>
+                        <option value="60" {% if prefs.auto_logout_minutes == 60 %}selected{% endif %}>1 Hour</option>
+                    </select>
+                    <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.25rem;">Automatically logs you out of the session after inactivity.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="clipboard_clear_seconds">Clipboard Clear Timer</label>
+                    <select id="clipboard_clear_seconds" name="clipboard_clear_seconds" class="input-control" required>
+                        <option value="10" {% if prefs.clipboard_clear_seconds == 10 %}selected{% endif %}>10 Seconds</option>
+                        <option value="15" {% if prefs.clipboard_clear_seconds == 15 %}selected{% endif %}>15 Seconds</option>
+                        <option value="20" {% if prefs.clipboard_clear_seconds == 20 %}selected{% endif %}>20 Seconds</option>
+                        <option value="30" {% if prefs.clipboard_clear_seconds == 30 %}selected{% endif %}>30 Seconds (Default)</option>
+                        <option value="45" {% if prefs.clipboard_clear_seconds == 45 %}selected{% endif %}>45 Seconds</option>
+                        <option value="60" {% if prefs.clipboard_clear_seconds == 60 %}selected{% endif %}>60 Seconds</option>
+                    </select>
+                    <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.25rem;">Clears copied passwords from your clipboard buffer.</small>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem;">
+                <div class="form-group">
+                    <label for="default_security_level">Default Security Level</label>
+                    <select id="default_security_level" name="default_security_level" class="input-control" required>
+                        <option value="low" {% if prefs.default_security_level == 'low' %}selected{% endif %}>Low (Default Entertainment)</option>
+                        <option value="medium" {% if prefs.default_security_level == 'medium' %}selected{% endif %}>Medium (Default Social Media)</option>
+                        <option value="high" {% if prefs.default_security_level == 'high' %}selected{% endif %}>High (Default Email)</option>
+                        <option value="critical" {% if prefs.default_security_level == 'critical' %}selected{% endif %}>Critical (Default Bank)</option>
+                    </select>
+                    <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.25rem;">The default category-level classification mapping.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="theme">UI Color Theme</label>
+                    <select id="theme" name="theme" class="input-control" required>
+                        <option value="dark" {% if prefs.theme == 'dark' %}selected{% endif %}>Dark Glassmorphic (Recommended)</option>
+                        <option value="light" {% if prefs.theme == 'light' %}selected{% endif %}>Light Mode</option>
+                    </select>
+                    <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.25rem;">Adjust the background contrast and glow tones.</small>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save Preferences</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

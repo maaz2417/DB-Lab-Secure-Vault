@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Failed Login Log - SecureVault{% endblock %}
+
+{% block content %}
+<div class="vault-header">
+    <div>
+        <h1 style="font-size: 2rem;">⚠️ Failed Login Log</h1>
+        <p style="color: var(--text-secondary); margin-top: 0.25rem;">Monitor unauthorized attempts to unlock your vault</p>
+    </div>
+</div>
+
+<div class="glass-card" style="border-color: rgba(239, 68, 68, 0.2);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem;">
+        <h3 style="font-size: 1.2rem; color: var(--color-danger);">Failed Master Password Attempts</h3>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Security Monitoring</span>
+    </div>
+
+    {% if attempts %}
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>IP Address</th>
+                    <th>Alert Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attempt in attempts %}
+                <tr>
+                    <td style="font-size: 0.95rem; color: var(--text-secondary);">{{ attempt.attempted_at }}</td>
+                    <td style="font-family: monospace; font-size: 0.95rem; font-weight: 500;">
+                        {{ attempt.ip_address or '127.0.0.1' }}
+                    </td>
+                    <td>
+                        <span style="
+                            padding: 0.25rem 0.5rem;
+                            border-radius: 6px;
+                            font-size: 0.8rem;
+                            font-weight: 600;
+                            text-transform: uppercase;
+                            background: rgba(239, 68, 68, 0.15); 
+                            color: #f87171;
+                            border: 1px solid rgba(239, 68, 68, 0.2);
+                        ">
+                            UNAUTHORIZED
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 4rem 1rem;">
+        <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">🛡️</span>
+        <h4 style="margin-bottom: 0.25rem; font-size: 1.1rem;">No Failed Attempts Recorded</h4>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">Your account is currently secure. No brute-force signatures detected.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

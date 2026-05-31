@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ prefs.theme if prefs else 'dark' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SecureVault - Password Manager{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="shortcut icon" href="https://img.icons8.com/neon/96/shield.png" type="image/png">
+    <meta name="description" content="SecureVault is a secure, encrypted password manager with tiered credential access, session tracking, and audit logging.">
+</head>
+<body data-auto-logout="{{ prefs.auto_logout_minutes if prefs else '10' }}">
+
+    <!-- Flash Message Container for dynamic alerts -->
+    <div id="flash-container" class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category if category != 'message' else 'info' }}">
+                        <span>
+                            {% if category == 'success' %}✅
+                            {% elif category == 'error' %}❌
+                            {% elif category == 'warning' %}⚠️
+                            {% else %}ℹ️
+                            {% endif %}
+                        </span>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="app-container">
+        {% if session.get('user_id') %}
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="brand-icon">🔐</span>
+                <span class="brand-name">SecureVault</span>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard') }}">
+                        <span>📂</span>
+                        <span class="nav-text">Vault Entries</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.endpoint == 'add_vault' %}active{% endif %}">
+                    <a href="{{ url_for('add_vault') }}">
+                        <span>➕</span>
+                        <span class="nav-text">Add Credential</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.endpoint == 'generator' %}active{% endif %}">
+                    <a href="{{ url_for('generator') }}">
+                        <span>⚡</span>
+                        <span class="nav-text">Password Gen</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.endpoint == 'audit_logs' %}active{% endif %}">
+                    <a href="{{ url_for('audit_logs') }}">
+                        <span>📜</span>
+                        <span class="nav-text">Audit Logs</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.endpoint == 'failed_logins' %}active{% endif %}">
+                    <a href="{{ url_for('failed_logins') }}">
+                        <span>⚠️</span>
+                        <span class="nav-text">Failed Logins</span>
+                    </a>
+                </li>
+                <li class="nav-item {% if request.endpoint == 'settings' %}active{% endif %}">
+                    <a href="{{ url_for('settings') }}">
+                        <span>⚙️</span>
+                        <span class="nav-text">Settings</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="user-profile">
+                <div class="user-info">
+                    <span class="username">{{ session.get('username') }}</span>
+                    <span class="user-role">Authorized Vault User</span>
+                </div>
+                <form action="{{ url_for('logout') }}" method="POST" style="display: inline;">
+                    <button type="submit" class="logout-btn" title="Log Out">
+                        <span class="logout-btn-text">🚪</span>
+                    </button>
+                </form>
+            </div>
+        </aside>
+        {% endif %}
+
+        <!-- Main Body -->
+        <main class="main-content" style="{% if not session.get('user_id') %}margin-left: 0; width: 100%; max-width: 100%;{% endif %}">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Re-Authentication Modal -->
+    <div id="reauth-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">🔐 Master Password Required</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                This credential is in a protected security tier. Please enter your master password to decrypt it.
+            </p>
+            <form id="reauth-form">
+                <div class="form-group">
+                    <label for="reauth-master-password">Master Password</label>
+                    <input type="password" id="reauth-master-password" class="input-control" required placeholder="••••••••">
+                </div>
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem;">
+                    <button type="button" id="cancel-reauth" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Decrypt</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Auto fadeout flash messages
+        document.addEventListener('DOMContentLoaded', () => {
+            const flashes = document.querySelectorAll('.flash-message');
+            flashes.forEach(f => {
+                setTimeout(() => {
+                    f.style.animation = 'slideIn 0.3s ease reverse forwards';
+                    setTimeout(() => f.remove(), 300);
+                }, 4000);
+            });
+        });
+    </script>
+</body>
+</html>
