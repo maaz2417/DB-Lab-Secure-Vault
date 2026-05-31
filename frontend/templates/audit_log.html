@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Audit Logs - SecureVault{% endblock %}
+
+{% block content %}
+<div class="vault-header">
+    <div>
+        <h1 style="font-size: 2rem;">📜 Security Audit Logs</h1>
+        <p style="color: var(--text-secondary); margin-top: 0.25rem;">A verifiable history of actions executed in your vault</p>
+    </div>
+</div>
+
+<div class="glass-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem;">
+        <h3 style="font-size: 1.2rem;">Activity History</h3>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Showing last 100 entries</span>
+    </div>
+
+    {% if logs %}
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Action</th>
+                    <th>Associated Site</th>
+                    <th>User ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td style="font-size: 0.9rem; color: var(--text-secondary);">{{ log.action_time }}</td>
+                    <td>
+                        <span style="
+                            padding: 0.25rem 0.5rem;
+                            border-radius: 6px;
+                            font-size: 0.8rem;
+                            font-weight: 600;
+                            text-transform: uppercase;
+                            background: {% if 'DELETE' in log.action or 'FAILURE' in log.action %}rgba(239, 68, 68, 0.15); color: #f87171{% elif 'EDIT' in log.action %}rgba(245, 158, 11, 0.15); color: #fbbf24{% elif 'ADD' in log.action %}rgba(16, 185, 129, 0.15); color: #34d399{% else %}rgba(59, 130, 246, 0.15); color: #60a5fa{% endif %};
+                        ">
+                            {{ log.action }}
+                        </span>
+                    </td>
+                    <td style="font-weight: 500;">
+                        {{ log.site_name or 'System / Global' }}
+                    </td>
+                    <td style="font-size: 0.85rem; color: var(--text-muted);">{{ log.user_id }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem 1rem;">
+        <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">📄</span>
+        <p style="color: var(--text-secondary);">No action history logged yet.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

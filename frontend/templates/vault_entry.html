@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if item %}Edit Credential{% else %}Add Credential{% endif %} - SecureVault{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div class="vault-header" style="margin-bottom: 2rem;">
+        <div>
+            <h1 style="font-size: 2rem;">{% if item %}✏️ Edit Credential{% else %}➕ Add Credential{% endif %}</h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                {% if item %}Modify entry details and view password changes{% else %}Securely save new credentials to your vault{% endif %}
+            </p>
+        </div>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+
+    <form action="{% if item %}{{ url_for('edit_vault', vault_id=item.vault_id) }}{% else %}{{ url_for('add_vault') }}{% endif %}" method="POST">
+        <div class="glass-card">
+            <h3 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem;">Credential Details</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; flex-wrap: wrap;">
+                <div class="form-group">
+                    <label for="site_name">Site or Application Name</label>
+                    <input type="text" id="site_name" name="site_name" class="input-control" required placeholder="e.g. GitHub" value="{{ item.site_name if item else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="type_id">Credential Category</label>
+                    <select id="type_id" name="type_id" class="input-control" required onchange="toggleFinancialSection()">
+                        {% for t in credential_types %}
+                        <option value="{{ t.type_id }}" data-security="{{ t.security_level }}" 
+                                {% if item and item.type_id == t.type_id %}selected{% elif not item and prefs and prefs.default_security_level == t.security_level %}selected{% endif %}>
+                            {{ t.type_name }} ({{ t.security_level|upper }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; flex-wrap: wrap;">
+                <div class="form-group">
+                    <label for="username">Username / Email</label>
+                    <input type="text" id="username" name="username" class="input-control" required placeholder="e.g. user@example.com" value="{{ item.username if item else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <input type="password" id="password" name="password" class="input-control" required placeholder="••••••••" value="{{ decrypted_password if decrypted_password else '' }}">
+                        <button type="button" id="toggle-pwd-btn" class="btn btn-secondary" style="padding: 0.75rem; border-radius: 12px;" onclick="togglePasswordVisibility()">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Notes / Description</label>
+                <textarea id="notes" name="notes" class="input-control" rows="3" placeholder="Add custom notes..." style="resize: vertical;">{{ item.notes if item else '' }}</textarea>
+            </div>
+        </div>
+
+        <!-- Dynamic Financial / Banking Section -->
+        <div class="glass-card" id="financial-section" style="display: none; border-color: rgba(16, 185, 129, 0.2);">
+            <h3 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem; color: var(--color-success);">
+                💳 Bank Account Details (AES Encrypted)
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <div class="form-group">
+                    <label for="bank_name">Bank Name</label>
+                    <input type="text" id="bank_name" name="bank_name" class="input-control" placeholder="e.g. Moore Ltd Bank" value="{{ item.bank_name if item else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="account_type">Account Type</label>
+                    <select id="account_type" name="account_type" class="input-control">
+                        <option value="savings" {% if item and item.account_type == 'savings' %}selected{% endif %}>Savings Account</option>
+                        <option value="current" {% if item and item.account_type == 'current' %}selected{% endif %}>Current Account</option>
+                        <option value="credit" {% if item and item.account_type == 'credit' %}selected{% endif %}>Credit Card</option>
+                        <option value="wallet" {% if item and item.account_type == 'wallet' %}selected{% endif %}>Digital Wallet</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1.5rem; flex-wrap: wrap;">
+                <div class="form-group">
+                    <label for="account_number">Account Number</label>
+                    <input type="text" id="account_number" name="account_number" class="input-control" placeholder="Full account or card number" value="{{ bank_account if bank_account else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="card_last_four">Last 4 Digits</label>
+                    <input type="text" id="card_last_four" name="card_last_four" class="input-control" placeholder="1234" maxlength="4" value="{{ item.card_last_four if item else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="pin">ATM / Card PIN</label>
+                    <input type="password" id="pin" name="pin" class="input-control" placeholder="••••" maxlength="6" value="{{ bank_pin if bank_pin else '' }}">
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem; margin-bottom: 3rem;">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">{% if item %}Save Changes{% else %}Add to Vault{% endif %}</button>
+        </div>
+    </form>
+
+    <!-- Password History (Only visible when editing) -->
+    {% if item and history %}
+    <div class="glass-card" style="margin-top: 3rem;">
+        <h3 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem;">
+            📜 Password History (Retained Changes)
+        </h3>
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Archive Date</th>
+                        <th>Encrypted State</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in history %}
+                    <tr>
+                        <td style="font-size: 0.9rem;">{{ h.changed_at }}</td>
+                        <td style="font-family: monospace; font-size: 0.85rem; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <span id="hist-text-{{ h.history_id }}">••••••••</span>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 6px;" 
+                                    onclick="decryptHistoryPassword({{ h.history_id }}, '{{ h.encrypted_password }}')">
+                                Decrypt
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function decryptHistoryPassword(historyId, encPwd) {
+            const histSpan = document.getElementById(`hist-text-${historyId}`);
+            
+            const fetchDecrypted = (masterPwd) => {
+                fetch('/vault/decrypt-history', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        encrypted_password: encPwd,
+                        master_password: masterPwd
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        histSpan.textContent = data.password;
+                        histSpan.style.color = 'var(--color-success)';
+                        setTimeout(() => {
+                            histSpan.textContent = '••••••••';
+                            histSpan.style.color = '';
+                        }, 10000); // Hide after 10s
+                    } else {
+                        alert(data.error || 'Failed to decrypt password history.');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Connection error.');
+                });
+            };
+
+            const overlay = document.getElementById('reauth-modal');
+            const form = document.getElementById('reauth-form');
+            const input = document.getElementById('reauth-master-password');
+            
+            overlay.classList.add('active');
+            input.value = '';
+            input.focus();
+
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                overlay.classList.remove('active');
+                fetchDecrypted(input.value);
+            };
+        }
+    </script>
+    {% endif %}
+</div>
+
+<script>
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('password');
+        const toggleBtn = document.getElementById('toggle-pwd-btn');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleBtn.textContent = '🙈';
+        } else {
+            passwordInput.type = 'password';
+            toggleBtn.textContent = '👁️';
+        }
+    }
+
+    function toggleFinancialSection() {
+        const typeSelect = document.getElementById('type_id');
+        const financialSection = document.getElementById('financial-section');
+        const selectedOption = typeSelect.options[typeSelect.selectedIndex];
+        
+        // type_id = 4 represents Financial category in credential_types.csv
+        if (typeSelect.value === '4') {
+            financialSection.style.display = 'block';
+            document.getElementById('bank_name').required = true;
+            document.getElementById('account_number').required = true;
+        } else {
+            financialSection.style.display = 'none';
+            document.getElementById('bank_name').required = false;
+            document.getElementById('account_number').required = false;
+        }
+    }
+
+    // Run on load to set initial state
+    document.addEventListener('DOMContentLoaded', () => {
+        toggleFinancialSection();
+    });
+</script>
+{% endblock %}
